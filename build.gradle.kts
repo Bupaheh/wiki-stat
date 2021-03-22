@@ -30,3 +30,7 @@ kotlin.sourceSets.all {
         useExperimentalAnnotation("kotlin.time.ExperimentalTime")
     }
 }
+
+application {
+    mainClass.set("ru.senin.kotlin.wiki.mainKt")
+}
