@@ -9,6 +9,8 @@ import org.xml.sax.Attributes
 import org.xml.sax.helpers.DefaultHandler
 import java.io.File
 import javax.xml.parsers.SAXParserFactory
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
 import kotlin.properties.Delegates
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -43,10 +45,33 @@ lateinit var parameters: Parameters
 
 class Page {
     // List<Char> instead of String to avoid copying in PageHandler.characters
-    var title: List<Char>? = null
-    var text: List<Char>? = null
-    var size: Int? = null
+    lateinit var title: List<Char>
+    lateinit var text: List<Char>
+    var sizeLog: Int? = null
     var year: Int? = null
+
+    fun isInitialized() =
+        this::title.isInitialized && this::text.isInitialized && sizeLog != null && year != null
+}
+
+
+fun countWords(text: List<Char>, counts: MutableMap<String, Int>) {
+    val stringBuilder = StringBuilder()
+    for (i in text.indices) {
+        when {
+            text[i] in 'а'..'я' -> stringBuilder.append(text[i])
+            text[i] in 'А'..'Я' -> stringBuilder.append(text[i] - ('А' - 'a'))
+            stringBuilder.isNotEmpty() -> {
+                val word = stringBuilder.toString()
+                counts[word] = counts.getOrDefault(word, 0) + 1
+                stringBuilder.clear()
+            }
+        }
+    }
+    if (stringBuilder.isNotEmpty()) {
+        val word = stringBuilder.toString()
+        counts[word] = counts.getOrDefault(word, 0) + 1
+    }
 }
 
 class PageHandler : DefaultHandler() {
@@ -62,16 +87,25 @@ class PageHandler : DefaultHandler() {
     private val tags = Tag.values().map { it.name.toLowerCase() to it }.toMap()
     private val tagStack = mutableListOf<Tag?>()
     private var lastPage: Page? = null
+    private val sizeCount = IntArray(10)
+    private val yearCount = IntArray(3000)
+    private val titleWordCount = mutableMapOf<String, Int>()
+    private val textWordCount = mutableMapOf<String, Int>()
 
     private fun processPage(page: Page) {
-
+        if (!page.isInitialized())
+            return
+        sizeCount[requireNotNull(page.sizeLog)]++
+        yearCount[requireNotNull(page.year)]++
+        countWords(page.title, titleWordCount)
+        countWords(page.text, textWordCount)
     }
 
     override fun startElement(uri: String?, localName: String?, qName: String?, attributes: Attributes?) {
         val tag = tags[qName].takeIf { it?.parent == tagStack.lastOrNull() }
         tagStack.add(tag)
         when (tag) {
-            Tag.TEXT -> lastPage?.size = attributes?.getValue("bytes")?.toIntOrNull()
+            Tag.TEXT -> attributes?.let { lastPage?.sizeLog = it.getValue("bytes").length - 1 }
             Tag.PAGE -> lastPage = Page()
         }
     }
@@ -89,7 +123,7 @@ class PageHandler : DefaultHandler() {
         when (tagStack.lastOrNull()) {
             Tag.TITLE -> lastPage?.title = list
             Tag.TEXT -> lastPage?.text = list
-            Tag.TIMESTAMP -> lastPage?.year = list.takeWhile { it.isDigit() }.toString().toInt()
+            Tag.TIMESTAMP -> lastPage?.year = list.takeWhile { it.isDigit() }.joinToString("").toInt()
         }
     }
 }
@@ -104,6 +138,7 @@ fun process(inputs: List<File>, output: String, threads: Int) {
 }
 
 fun main(args: Array<String>) {
+    val a by Delegates.notNull<Int>()
     try {
         parameters = Parameters().parse(args)
 
