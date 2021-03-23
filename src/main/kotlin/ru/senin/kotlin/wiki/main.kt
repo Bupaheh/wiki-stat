@@ -18,6 +18,7 @@ import kotlin.contracts.contract
 import kotlin.properties.Delegates
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
+import kotlin.system.exitProcess
 import kotlin.time.measureTime
 
 class Parameters : Arkenv() {
@@ -66,7 +67,6 @@ class Page {
     fun isInitialized() =
         title.isNotEmpty() && text.isNotEmpty() && sizeLog != null && year != null
 }
-
 
 fun countWords(text: StringBuilder, counts: ConcurrentHashMap<String, Int>) {
     val stringBuilder = StringBuilder()

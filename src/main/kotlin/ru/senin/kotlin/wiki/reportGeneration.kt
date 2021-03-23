@@ -14,18 +14,18 @@ private fun getMostFrequentWords(counts: MutableMap<String, Int>, number: Int) :
     return result.toList()
 }
 
-private fun getNonZeroSegment(array: AtomicIntegerArray, size: Int) {
+private fun getNonZeroSegment(array: AtomicIntegerArray, size: Int): String {
     var firstNonZeroValue = size
     var lastNonZeroValue = -1
-    for (i in 0..size) {
+    for (i in 0 until size) {
         if (array.get(i) != 0) {
-            firstNonZeroValue = Integer.min(i, size)
+            firstNonZeroValue = Integer.min(i, firstNonZeroValue)
             lastNonZeroValue = i
         }
     }
-    buildString {
+    return buildString {
         for (i in firstNonZeroValue..lastNonZeroValue)
-            append(array.get(i).toString())
+            appendLine("${i} ${array.get(i)}")
     }
 }
 
