@@ -58,26 +58,26 @@ object Stats {
 lateinit var parameters: Parameters
 
 class Page {
-    // List<Char> instead of String to avoid copying in PageHandler.characters
-    lateinit var title: List<Char>
-    lateinit var text: List<Char>
+    val title = StringBuilder()
+    val text = StringBuilder()
     var sizeLog: Int? = null
     var year: Int? = null
 
     fun isInitialized() =
-        this::title.isInitialized && this::text.isInitialized && sizeLog != null && year != null
+        title.isNotEmpty() && text.isNotEmpty() && sizeLog != null && year != null
 }
 
 
-fun countWords(text: List<Char>, counts: ConcurrentHashMap<String, Int>) {
+fun countWords(text: StringBuilder, counts: ConcurrentHashMap<String, Int>) {
     val stringBuilder = StringBuilder()
-    for (i in text.indices) {
+    for (char in text) {
         when {
-            text[i] in 'а'..'я' -> stringBuilder.append(text[i])
-            text[i] in 'А'..'Я' -> stringBuilder.append(text[i] - ('А' - 'a'))
+            char in 'а'..'я' -> stringBuilder.append(char)
+            char in 'А'..'Я' -> stringBuilder.append(char.toLowerCase())
             stringBuilder.isNotEmpty() -> {
                 val word = stringBuilder.toString()
-                counts[word] = counts.getOrDefault(word, 0) + 1
+                counts.putIfAbsent(word, 0)
+                counts.computeIfPresent(word) { _, value -> value + 1 }
                 stringBuilder.clear()
             }
         }
@@ -130,23 +130,23 @@ class PageHandler : DefaultHandler() {
     }
 
     override fun characters(ch: CharArray?, start: Int, length: Int) {
-        val list = ch?.asList()?.subList(start, start + length) ?: listOf()
         when (tagStack.lastOrNull()) {
-            Tag.TITLE -> lastPage?.title = list
-            Tag.TEXT -> lastPage?.text = list
-            Tag.TIMESTAMP -> lastPage?.year = list.takeWhile { it.isDigit() }.joinToString("").toInt()
+            Tag.TITLE -> lastPage?.title?.append(ch, start, length)
+            Tag.TEXT -> lastPage?.text?.append(ch, start, length)
+            Tag.TIMESTAMP -> lastPage?.year = String(ch ?: charArrayOf(), start, length).takeWhile { it.isDigit() }.toInt()
         }
     }
 }
 
 fun process(inputs: List<File>, output: String, threads: Int) {
-    inputs.map { file ->
+    inputs.forEach { file ->
         val inputStream = BZip2CompressorInputStream(file.inputStream())
         val parser = SAXParserFactory.newInstance().newSAXParser()
         val handler = PageHandler()
         parser.parse(inputStream, handler)
-        generateReport()
+        inputStream.close()
     }
+    val result = generateReport()
 }
 
 fun main(args: Array<String>) {
