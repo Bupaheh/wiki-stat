@@ -25,7 +25,7 @@ private fun getNonZeroSegment(array: AtomicIntegerArray, size: Int): String {
     }
     return buildString {
         for (i in firstNonZeroValue..lastNonZeroValue)
-            appendLine("${i} ${array.get(i)}")
+            appendLine("$i ${array.get(i)}")
     }
 }
 
