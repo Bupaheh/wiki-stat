@@ -8,6 +8,10 @@ import org.jetbrains.annotations.NotNull
 import org.xml.sax.Attributes
 import org.xml.sax.helpers.DefaultHandler
 import java.io.File
+import java.lang.Integer.min
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
+import java.util.concurrent.atomic.AtomicIntegerArray
 import javax.xml.parsers.SAXParserFactory
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
@@ -41,6 +45,16 @@ class Parameters : Arkenv() {
     }
 }
 
+object Stats {
+    const val sizeCountSize = 10
+    const val yearCountSize = 3000
+
+    val sizeCount = AtomicIntegerArray(sizeCountSize)
+    val yearCount = AtomicIntegerArray(yearCountSize)
+    val titleWordCount = ConcurrentHashMap<String, Int>()
+    val textWordCount = ConcurrentHashMap<String, Int>()
+}
+
 lateinit var parameters: Parameters
 
 class Page {
@@ -55,7 +69,7 @@ class Page {
 }
 
 
-fun countWords(text: List<Char>, counts: MutableMap<String, Int>) {
+fun countWords(text: List<Char>, counts: ConcurrentHashMap<String, Int>) {
     val stringBuilder = StringBuilder()
     for (i in text.indices) {
         when {
@@ -70,7 +84,8 @@ fun countWords(text: List<Char>, counts: MutableMap<String, Int>) {
     }
     if (stringBuilder.isNotEmpty()) {
         val word = stringBuilder.toString()
-        counts[word] = counts.getOrDefault(word, 0) + 1
+        counts.putIfAbsent(word, 0)
+        counts.computeIfPresent(word) { _, value -> value + 1 }
     }
 }
 
@@ -87,18 +102,14 @@ class PageHandler : DefaultHandler() {
     private val tags = Tag.values().map { it.name.toLowerCase() to it }.toMap()
     private val tagStack = mutableListOf<Tag?>()
     private var lastPage: Page? = null
-    private val sizeCount = IntArray(10)
-    private val yearCount = IntArray(3000)
-    private val titleWordCount = mutableMapOf<String, Int>()
-    private val textWordCount = mutableMapOf<String, Int>()
 
     private fun processPage(page: Page) {
         if (!page.isInitialized())
             return
-        sizeCount[requireNotNull(page.sizeLog)]++
-        yearCount[requireNotNull(page.year)]++
-        countWords(page.title, titleWordCount)
-        countWords(page.text, textWordCount)
+        Stats.sizeCount.incrementAndGet(requireNotNull(page.sizeLog))
+        Stats.yearCount.incrementAndGet(requireNotNull(page.year))
+        countWords(page.title, Stats.titleWordCount)
+        countWords(page.text, Stats.textWordCount)
     }
 
     override fun startElement(uri: String?, localName: String?, qName: String?, attributes: Attributes?) {
@@ -126,35 +137,6 @@ class PageHandler : DefaultHandler() {
             Tag.TIMESTAMP -> lastPage?.year = list.takeWhile { it.isDigit() }.joinToString("").toInt()
         }
     }
-
-    data class WordStat(val word: String, val count: Int)
-
-    private fun getMostFrequentWords(counts: MutableMap<String, Int>, number: Int) : List<WordStat> {
-        val result = sortedSetOf(compareByDescending<WordStat> { it.count }.thenBy { it.word })
-        for ((word, count) in counts) {
-            result.add(WordStat(word, count))
-            if (result.size > number)
-                result.remove(result.last())
-        }
-        return result.toList()
-    }
-
-    private fun getNonZeroSegment(array: IntArray) =
-        array.withIndex().dropWhile { it.value == 0 }.dropLastWhile { it.value == 0 }
-
-    fun generateReport(): String {
-        val wordNumber = 300
-        return buildString {
-            appendLine("Топ-$wordNumber слов в заголовках статей:")
-            appendLine(getMostFrequentWords(titleWordCount, wordNumber).joinToString("\n") { "${it.count} ${it.word}" })
-            appendLine("Топ-$wordNumber слов в текстах статей:")
-            appendLine(getMostFrequentWords(titleWordCount, wordNumber).joinToString("\n") { "${it.count} ${it.word}" })
-            appendLine("Распределение статей по размеру:")
-            appendLine(getNonZeroSegment(sizeCount).joinToString("\n") { "${it.index} ${it.value}" })
-            appendLine("Распределение статей по времени:")
-            appendLine(getNonZeroSegment(yearCount).joinToString("\n") { "${it.index} ${it.value}" })
-        }
-    }
 }
 
 fun process(inputs: List<File>, output: String, threads: Int) {
@@ -163,7 +145,7 @@ fun process(inputs: List<File>, output: String, threads: Int) {
         val parser = SAXParserFactory.newInstance().newSAXParser()
         val handler = PageHandler()
         parser.parse(inputStream, handler)
-        handler.generateReport()
+        generateReport()
     }
 }
 
