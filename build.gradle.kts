@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.4.10"
+    kotlin("plugin.serialization") version "1.4.10"
     application
 }
 group = "ru.senin.kotlin.wiki"
@@ -16,6 +17,7 @@ dependencies {
     implementation("com.apurebase:arkenv:3.1.0")
     implementation("org.apache.commons:commons-compress:1.20")
     implementation(kotlin("reflect"))
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.1.0")
 
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.7.0")
     testImplementation(kotlin("test-junit5"))

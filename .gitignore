@@ -56,7 +56,7 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
-# Downloaded dumps
+# Testing data
 data/
-
+temp_test_data/
 statistics.txt

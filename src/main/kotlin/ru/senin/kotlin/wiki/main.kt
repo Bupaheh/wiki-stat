@@ -10,9 +10,19 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicIntegerArray
 import javax.xml.parsers.SAXParserFactory
 import kotlin.time.measureTime
+import kotlinx.serialization.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import java.io.BufferedInputStream
+import java.net.URL
+import java.nio.channels.Channels
+import java.nio.channels.ReadableByteChannel
+import java.nio.file.Files
 
 class Parameters : Arkenv() {
-    val inputs: List<File> by argument("--inputs") {
+    val inputs: List<File>? by argument("--inputs") {
         description = "Path(s) to bzip2 archived XML file(s) with WikiMedia dump. Comma separated."
         mapping = {
             it.split(",").map { name -> File(name) }
@@ -33,6 +43,9 @@ class Parameters : Arkenv() {
         validate("Number of threads must be in 1..32") {
             it in 1..32
         }
+    }
+    val date: String? by argument("--date") {
+        description = "Date to load dumps for"
     }
 }
 
@@ -90,6 +103,30 @@ fun process(inputs: List<File>, output: String, numberOfThreads: Int, waitTime: 
     File(output).writeText(generateReport(stats))
 }
 
+fun downloadFiles(date: String): List<File> {
+    try {
+        val urls =
+            BufferedInputStream(URL("https://dumps.wikimedia.org/ruwiki/$date/dumpstatus.json").openStream()).use { inputStream ->
+                Json.parseToJsonElement(inputStream.readAllBytes().decodeToString())
+                    .jsonObject["jobs"]!!.jsonObject["metacurrentdump"]!!.jsonObject["files"]!!.jsonObject.map {
+                    "https://dumps.wikimedia.org${it.value.jsonObject["url"]!!.jsonPrimitive.content}"
+                }
+            }
+        return urls.map { url ->
+            BufferedInputStream(URL(url).openStream()).use { inputStream ->
+                File("data/" + url.takeLastWhile { it != '/' }).apply {
+                    outputStream().use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+            }
+        }
+    } catch (e: Throwable) {
+        println("Invalid date: ${e.message}")
+        throw e
+    }
+}
+
 fun main(args: Array<String>) {
     try {
         parameters = Parameters().parse(args)
@@ -100,7 +137,9 @@ fun main(args: Array<String>) {
         }
 
         val duration = measureTime {
-            process(parameters.inputs, parameters.output, parameters.threads)
+            process(parameters.date?.let { downloadFiles(it) } ?: parameters.inputs ?: throw Exception("Inputs or date should be defined"),
+                parameters.output,
+                parameters.threads)
         }
         println("Time: ${duration.inMilliseconds} ms")
 

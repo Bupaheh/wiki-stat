@@ -115,6 +115,16 @@ class AppTest {
         testInputs("big.xml", threads = 4)
     }
 
+    @Test
+    @Timeout(TIMEOUT)
+    fun `download by date`() {
+        val args = arrayOf(
+            "--threads", "1",
+            "--date", "20210301"
+        )
+        main(args)
+    }
+
     private fun testInputs(xmlInputs: String, threads: Int) {
         val outputPrefix = xmlInputs.replace(",", "__")
         val outputFileName = "$outputPrefix.actual.txt"

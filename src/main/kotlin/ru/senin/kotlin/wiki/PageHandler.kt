@@ -14,7 +14,7 @@ private class Page {
         title.isNotEmpty() && text.isNotEmpty() && sizeLog != null && year != null
 }
 
-private fun countWords(text: StringBuilder, counts: ConcurrentHashMap<String, Int>) {
+fun countWords(text: StringBuilder, counts: ConcurrentHashMap<String, Int>) {
     val stringBuilder = StringBuilder()
     for (char in text) {
         when {
