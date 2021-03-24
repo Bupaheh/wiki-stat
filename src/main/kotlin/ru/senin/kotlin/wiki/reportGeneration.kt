@@ -2,7 +2,7 @@ package ru.senin.kotlin.wiki
 
 import java.util.concurrent.atomic.AtomicIntegerArray
 
-private fun getMostFrequentWords(counts: MutableMap<String, Int>, number: Int): String {
+fun getMostFrequentWords(counts: Map<String, Int>, number: Int): String {
     data class WordStat(val word: String, val count: Int)
 
     val result = sortedSetOf(compareByDescending<WordStat> { it.count }.thenBy { it.word })
@@ -16,7 +16,7 @@ private fun getMostFrequentWords(counts: MutableMap<String, Int>, number: Int): 
     }
 }
 
-private fun getNonZeroSegment(array: AtomicIntegerArray): String {
+fun getNonZeroSegment(array: AtomicIntegerArray): String {
     var firstNonZeroValue = array.length()
     var lastNonZeroValue = -1
     for (i in 0 until array.length()) {
