@@ -5,6 +5,7 @@ import org.junit.jupiter.api.*
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.file.Paths
+import kotlin.test.Ignore
 import kotlin.test.assertEquals
 
 class AppTest {
@@ -115,6 +116,7 @@ class AppTest {
         testInputs("big.xml", threads = 4)
     }
 
+    @Ignore
     @Test
     @Timeout(TIMEOUT)
     fun `download by date`() {

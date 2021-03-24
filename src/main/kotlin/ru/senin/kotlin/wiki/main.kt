@@ -114,7 +114,8 @@ fun downloadFiles(date: String): List<File> {
             }
         return urls.map { url ->
             BufferedInputStream(URL(url).openStream()).use { inputStream ->
-                File("data/" + url.takeLastWhile { it != '/' }).apply {
+                File("temp_test_data/" + url.takeLastWhile { it != '/' }).apply {
+                    mkdirs()
                     outputStream().use { outputStream ->
                         inputStream.copyTo(outputStream)
                     }
