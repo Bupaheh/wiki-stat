@@ -34,9 +34,9 @@ fun generateReport(): String {
     val wordNumber = 300
     return buildString {
         appendLine("Топ-$wordNumber слов в заголовках статей:")
-        appendLine(getMostFrequentWords(Stats.titleWordCount, wordNumber).joinToString("\n") { "${it.count} ${it.word}" })
+        appendLine(getMostFrequentWords(Stats.titleWordCount, wordNumber).joinToString("\n", postfix = "\n") { "${it.count} ${it.word}" })
         appendLine("Топ-$wordNumber слов в текстах статей:")
-        appendLine(getMostFrequentWords(Stats.textWordCount, wordNumber).joinToString("\n") { "${it.count} ${it.word}" })
+        appendLine(getMostFrequentWords(Stats.textWordCount, wordNumber).joinToString("\n", postfix = "\n") { "${it.count} ${it.word}" })
         appendLine("Распределение статей по размеру:")
         appendLine(getNonZeroSegment(Stats.sizeCount, Stats.sizeCountSize))
         appendLine("Распределение статей по времени:")

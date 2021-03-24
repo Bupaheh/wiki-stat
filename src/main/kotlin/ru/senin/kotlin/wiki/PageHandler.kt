@@ -20,7 +20,7 @@ private fun countWords(text: StringBuilder, counts: ConcurrentHashMap<String, In
         when {
             char in 'а'..'я' -> stringBuilder.append(char)
             char in 'А'..'Я' -> stringBuilder.append(char.toLowerCase())
-            stringBuilder.isNotEmpty() -> {
+            stringBuilder.length >= 3 -> {
                 val word = stringBuilder.toString()
                 counts.putIfAbsent(word, 0)
                 counts.computeIfPresent(word) { _, value -> value + 1 }
@@ -28,7 +28,7 @@ private fun countWords(text: StringBuilder, counts: ConcurrentHashMap<String, In
             }
         }
     }
-    if (stringBuilder.isNotEmpty()) {
+    if (stringBuilder.length >= 3) {
         val word = stringBuilder.toString()
         counts.putIfAbsent(word, 0)
         counts.computeIfPresent(word) { _, value -> value + 1 }
