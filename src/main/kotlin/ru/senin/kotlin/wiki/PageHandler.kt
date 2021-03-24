@@ -26,6 +26,7 @@ private fun countWords(text: StringBuilder, counts: ConcurrentHashMap<String, In
                 counts.computeIfPresent(word) { _, value -> value + 1 }
                 stringBuilder.clear()
             }
+            else -> stringBuilder.clear()
         }
     }
     if (stringBuilder.length >= 3) {
@@ -35,7 +36,7 @@ private fun countWords(text: StringBuilder, counts: ConcurrentHashMap<String, In
     }
 }
 
-class PageHandler : DefaultHandler() {
+class PageHandler(private val stats: Stats) : DefaultHandler() {
     private enum class Tag(val parent: Tag?) {
         MEDIAWIKI(null),
         PAGE(MEDIAWIKI),
@@ -52,11 +53,11 @@ class PageHandler : DefaultHandler() {
     private fun processPage(page: Page) {
         if (!page.isInitialized())
             return
-        Stats.threadPool.submit {
-            Stats.sizeCount.incrementAndGet(requireNotNull(page.sizeLog))
-            Stats.yearCount.incrementAndGet(requireNotNull(page.year))
-            countWords(page.title, Stats.titleWordCount)
-            countWords(page.text, Stats.textWordCount)
+        stats.threadPool.submit {
+            stats.sizeCount.incrementAndGet(requireNotNull(page.sizeLog))
+            stats.yearCount.incrementAndGet(requireNotNull(page.year))
+            countWords(page.title, stats.titleWordCount)
+            countWords(page.text, stats.textWordCount)
         }
     }
 

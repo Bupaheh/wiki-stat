@@ -58,3 +58,5 @@ fabric.properties
 
 # Downloaded dumps
 data/
+
+statistics.txt

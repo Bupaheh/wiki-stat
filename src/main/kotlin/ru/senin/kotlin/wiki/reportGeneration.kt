@@ -2,44 +2,45 @@ package ru.senin.kotlin.wiki
 
 import java.util.concurrent.atomic.AtomicIntegerArray
 
-private data class WordStat(val word: String, val count: Int)
+private fun getMostFrequentWords(counts: MutableMap<String, Int>, number: Int): String {
+    data class WordStat(val word: String, val count: Int)
 
-private fun getMostFrequentWords(counts: MutableMap<String, Int>, number: Int) : List<WordStat> {
     val result = sortedSetOf(compareByDescending<WordStat> { it.count }.thenBy { it.word })
     for ((word, count) in counts) {
         result.add(WordStat(word, count))
         if (result.size > number)
             result.remove(result.last())
     }
-    return result.toList()
+    return result.joinToString("") {
+        "${it.count} ${it.word}\n"
+    }
 }
 
-private fun getNonZeroSegment(array: AtomicIntegerArray, size: Int): String {
-    var firstNonZeroValue = size
+private fun getNonZeroSegment(array: AtomicIntegerArray): String {
+    var firstNonZeroValue = array.length()
     var lastNonZeroValue = -1
-    for (i in 0 until size) {
+    for (i in 0 until array.length()) {
         if (array.get(i) != 0) {
             firstNonZeroValue = Integer.min(i, firstNonZeroValue)
             lastNonZeroValue = i
         }
     }
-    return buildString {
-        for (i in firstNonZeroValue..lastNonZeroValue)
-            appendLine("$i ${array.get(i)}")
+    return (firstNonZeroValue..lastNonZeroValue).joinToString("") {
+        "$it ${array.get(it)}\n"
     }
 }
 
 
-fun generateReport(): String {
+fun generateReport(stats: Stats): String {
     val wordNumber = 300
     return buildString {
         appendLine("Топ-$wordNumber слов в заголовках статей:")
-        appendLine(getMostFrequentWords(Stats.titleWordCount, wordNumber).joinToString("\n", postfix = "\n") { "${it.count} ${it.word}" })
-        appendLine("Топ-$wordNumber слов в текстах статей:")
-        appendLine(getMostFrequentWords(Stats.textWordCount, wordNumber).joinToString("\n", postfix = "\n") { "${it.count} ${it.word}" })
+        appendLine(getMostFrequentWords(stats.titleWordCount, wordNumber))
+        appendLine("Топ-$wordNumber слов в статьях:")
+        appendLine(getMostFrequentWords(stats.textWordCount, wordNumber))
         appendLine("Распределение статей по размеру:")
-        appendLine(getNonZeroSegment(Stats.sizeCount, Stats.sizeCountSize))
+        appendLine(getNonZeroSegment(stats.sizeCount))
         appendLine("Распределение статей по времени:")
-        appendLine(getNonZeroSegment(Stats.yearCount, Stats.yearCountSize))
+        append(getNonZeroSegment(stats.yearCount))
     }
 }

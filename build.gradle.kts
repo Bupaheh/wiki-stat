@@ -34,3 +34,7 @@ kotlin.sourceSets.all {
 application {
     mainClass.set("ru.senin.kotlin.wiki.mainKt")
 }
+
+tasks.test {
+    useJUnitPlatform()
+}

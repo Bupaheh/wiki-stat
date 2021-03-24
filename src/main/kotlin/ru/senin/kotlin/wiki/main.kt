@@ -36,10 +36,7 @@ class Parameters : Arkenv() {
     }
 }
 
-object Stats {
-    const val sizeCountSize = 10
-    const val yearCountSize = 3000
-
+class Stats {
     val sizeCount = AtomicIntegerArray(sizeCountSize)
     val yearCount = AtomicIntegerArray(yearCountSize)
     val titleWordCount = ConcurrentHashMap<String, Int>()
@@ -55,6 +52,11 @@ object Stats {
         threadPool.shutdown()
         threadPool.awaitTermination(numberOfMinutes, TimeUnit.MINUTES)
     }
+
+    companion object {
+        const val sizeCountSize = 10
+        const val yearCountSize = 3000
+    }
 }
 
 lateinit var parameters: Parameters
@@ -62,20 +64,21 @@ lateinit var parameters: Parameters
 fun process(inputs: List<File>, output: String, numberOfThreads: Int, waitTime: Long = 3) {
     val countDownLatch = CountDownLatch(inputs.size)
     val parsersThreadPool = Executors.newFixedThreadPool(numberOfThreads)
-    Stats.threadPoolInit(numberOfThreads)
+    val stats = Stats()
+    stats.threadPoolInit(numberOfThreads)
 
     inputs.forEach { file ->
         parsersThreadPool.submit {
-            val inputStream = BZip2CompressorInputStream(file.inputStream())
             try {
-                val parser = SAXParserFactory.newInstance().newSAXParser()
-                val handler = PageHandler()
-                parser.parse(inputStream, handler)
+                BZip2CompressorInputStream(file.inputStream()).use { inputStream ->
+                    val parser = SAXParserFactory.newInstance().newSAXParser()
+                    val handler = PageHandler(stats)
+                    parser.parse(inputStream, handler)
+                }
             } catch (e: Exception) {
                 println("Error! ${e.message}")
                 throw e
             } finally {
-                inputStream.close()
                 countDownLatch.countDown()
             }
         }
@@ -83,8 +86,8 @@ fun process(inputs: List<File>, output: String, numberOfThreads: Int, waitTime: 
 
     parsersThreadPool.shutdown()
     countDownLatch.await()
-    Stats.awaitTermination(waitTime)
-    val result = generateReport()
+    stats.awaitTermination(waitTime)
+    File(output).writeText(generateReport(stats))
 }
 
 fun main(args: Array<String>) {
