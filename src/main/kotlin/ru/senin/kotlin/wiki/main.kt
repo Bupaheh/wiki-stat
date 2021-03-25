@@ -69,7 +69,7 @@ class Stats {
 
 lateinit var parameters: Parameters
 
-fun process(inputs: List<File>, output: String, numberOfThreads: Int, waitTime: Long = 3) {
+fun process(inputs: List<File>, output: String, numberOfThreads: Int, waitTime: Long = 120) {
     val countDownLatch = CountDownLatch(inputs.size)
     val parsersThreadPool = Executors.newFixedThreadPool(numberOfThreads)
     val stats = Stats()
