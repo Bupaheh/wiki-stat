@@ -2,6 +2,7 @@ package ru.senin.kotlin.wiki
 
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream
 import org.junit.jupiter.api.*
+import ru.senin.kotlin.wiki.AppTest.Companion.toBzip2Inputs
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.file.Paths
@@ -123,6 +124,17 @@ class AppTest {
         val args = arrayOf(
             "--threads", "1",
             "--date", "20210301"
+        )
+        main(args)
+    }
+
+    @Test
+    @Timeout(TIMEOUT)
+    fun `big XML HTML report`() {
+        val args = arrayOf(
+            "--threads", "4",
+            "--inputs", "big.xml".toBzip2Inputs(),
+            "--output", "big.xml.actual.html".relativeToTemporaryDir()
         )
         main(args)
     }

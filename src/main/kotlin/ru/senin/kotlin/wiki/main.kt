@@ -10,16 +10,11 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicIntegerArray
 import javax.xml.parsers.SAXParserFactory
 import kotlin.time.measureTime
-import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.BufferedInputStream
 import java.net.URL
-import java.nio.channels.Channels
-import java.nio.channels.ReadableByteChannel
-import java.nio.file.Files
 
 class Parameters : Arkenv() {
     val inputs: List<File>? by argument("--inputs") {
@@ -100,7 +95,11 @@ fun process(inputs: List<File>, output: String, numberOfThreads: Int, waitTime: 
     parsersThreadPool.shutdown()
     countDownLatch.await()
     stats.awaitTermination(waitTime)
-    File(output).writeText(generateReport(stats))
+    if (output.endsWith(".html")) {
+        generateReportHtml(stats, output)
+    } else {
+        File(output).writeText(generateReportString(stats))
+    }
 }
 
 fun downloadFiles(date: String): List<File> {
@@ -114,7 +113,7 @@ fun downloadFiles(date: String): List<File> {
             }
         return urls.map { url ->
             BufferedInputStream(URL(url).openStream()).use { inputStream ->
-                File("temp_test_data/" + url.takeLastWhile { it != '/' }).apply {
+                File("temp_test_data/" + url.substringAfterLast("/")).apply {
                     mkdirs()
                     outputStream().use { outputStream ->
                         inputStream.copyTo(outputStream)
