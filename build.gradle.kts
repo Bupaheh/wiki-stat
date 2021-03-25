@@ -5,6 +5,7 @@ plugins {
     kotlin("plugin.serialization") version "1.4.10"
     application
 }
+
 group = "ru.senin.kotlin.wiki"
 version = "1.0-SNAPSHOT"
 
@@ -38,7 +39,7 @@ kotlin.sourceSets.all {
 }
 
 application {
-    mainClass.set("ru.senin.kotlin.wiki.mainKt")
+    mainClass.set("ru.senin.kotlin.wiki.MainKt")
 }
 
 tasks.test {
